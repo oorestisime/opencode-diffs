@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Diff Review</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --radius: 8px;
+        --sidebar-width: 240px;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          "Helvetica Neue",
+          "Noto Sans",
+          "Liberation Sans",
+          Arial,
+          sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+        color: light-dark(#1a1a1a, #e8e8e8);
+        background: light-dark(#f5f5f5, #0a0a0a);
+        min-height: 100vh;
+      }
+
+      /* ── Header ── */
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 10px 20px;
+        background: light-dark(#ffffff, #111111);
+        border-bottom: 1px solid light-dark(#e0e0e0, #222222);
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      h1 {
+        font-size: 15px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .scope {
+        color: light-dark(#666666, #888888);
+        font-size: 12px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+
+      /* ── Theme toggle ── */
+      .theme-toggle {
+        display: inline-flex;
+        background: light-dark(#f0f0f0, #1a1a1a);
+        border: 1px solid light-dark(#d8d8d8, #2a2a2a);
+        border-radius: 6px;
+        padding: 2px;
+        gap: 2px;
+      }
+
+      .theme-toggle button {
+        all: unset;
+        cursor: pointer;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        color: light-dark(#666, #888);
+        transition: all 120ms;
+      }
+
+      .theme-toggle button:hover {
+        color: light-dark(#333, #ccc);
+      }
+
+      .theme-toggle button[aria-pressed="true"] {
+        background: light-dark(#ffffff, #2a2a2a);
+        color: light-dark(#111, #eee);
+        box-shadow: 0 1px 2px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.3));
+      }
+
+      /* ── Layout: sidebar + main ── */
+      .layout {
+        display: flex;
+        min-height: calc(100vh - 51px);
+      }
+
+      /* ── Left sidebar ── */
+      .sidebar {
+        position: sticky;
+        top: 51px;
+        width: var(--sidebar-width);
+        height: calc(100vh - 51px);
+        flex-shrink: 0;
+        overflow-y: auto;
+        background: light-dark(#fafafa, #0e0e0e);
+        border-right: 1px solid light-dark(#e0e0e0, #1e1e1e);
+        scrollbar-width: thin;
+      }
+
+      .sidebar-header {
+        padding: 10px 12px 6px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: light-dark(#888, #555);
+      }
+
+      .sidebar-list {
+        padding: 0 6px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+
+      .sidebar-item {
+        all: unset;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 8px;
+        border-radius: 5px;
+        font-size: 12px;
+        color: light-dark(#444, #bbb);
+        transition: all 100ms;
+        min-width: 0;
+      }
+
+      .sidebar-item:hover {
+        background: light-dark(#eeeeee, #1a1a1a);
+        color: light-dark(#111, #eee);
+      }
+
+      .sidebar-item[data-active] {
+        background: light-dark(#e8e8e8, #1e1e1e);
+        color: light-dark(#111, #eee);
+      }
+
+      .sidebar-item[data-read] {
+        opacity: 0.45;
+        text-decoration: line-through;
+      }
+
+      .sidebar-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .sidebar-dot.added {
+        background: light-dark(#1a7f37, #3fb950);
+      }
+      .sidebar-dot.deleted {
+        background: light-dark(#cf222e, #f85149);
+      }
+      .sidebar-dot.modified {
+        background: light-dark(#9a6700, #d29922);
+      }
+
+      .sidebar-name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: "SF Mono", Monaco, Consolas, "Ubuntu Mono", monospace;
+      }
+
+      .sidebar-stats {
+        flex-shrink: 0;
+        font-size: 10px;
+        font-family: "SF Mono", Monaco, Consolas, "Ubuntu Mono", monospace;
+        color: light-dark(#999, #555);
+      }
+
+      .sidebar-stats .sa {
+        color: light-dark(#1a7f37, #3fb950);
+      }
+      .sidebar-stats .sd {
+        color: light-dark(#cf222e, #f85149);
+      }
+
+      /* ── Main content ── */
+      .main {
+        flex: 1;
+        min-width: 0;
+        padding: 16px 16px 80px;
+      }
+
+      /* ── Diff cards ── */
+      .card {
+        border-radius: var(--radius);
+        margin-bottom: 12px;
+        overflow: hidden;
+        border: 1px solid light-dark(#e0e0e0, #222);
+        background: light-dark(#fff, #111);
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        cursor: pointer;
+        user-select: none;
+        background: light-dark(#fafafa, #161616);
+        border-bottom: 1px solid light-dark(#e8e8e8, #1e1e1e);
+        transition: background 100ms;
+      }
+
+      .card-header:hover {
+        background: light-dark(#f0f0f0, #1a1a1a);
+      }
+
+      .card[data-collapsed] .card-header {
+        border-bottom-color: transparent;
+      }
+
+      .card-chevron {
+        flex-shrink: 0;
+        width: 16px;
+        height: 16px;
+        color: light-dark(#999, #555);
+        transition: transform 150ms;
+      }
+
+      .card[data-collapsed] .card-chevron {
+        transform: rotate(-90deg);
+      }
+
+      .card-file-icon {
+        flex-shrink: 0;
+        width: 14px;
+        height: 14px;
+        color: light-dark(#666, #888);
+      }
+
+      .card-filename {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: "SF Mono", Monaco, Consolas, "Ubuntu Mono", monospace;
+      }
+
+      .card-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+        font-family: "SF Mono", Monaco, Consolas, "Ubuntu Mono", monospace;
+        font-size: 11px;
+      }
+
+      .card-status {
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+
+      .card-status.added {
+        color: light-dark(#1a7f37, #3fb950);
+        background: light-dark(#dafbe1, rgba(63, 185, 80, 0.12));
+      }
+
+      .card-status.deleted {
+        color: light-dark(#cf222e, #f85149);
+        background: light-dark(#ffebe9, rgba(248, 81, 73, 0.12));
+      }
+
+      .card-status.modified {
+        color: light-dark(#9a6700, #d29922);
+        background: light-dark(#fff8c5, rgba(210, 153, 34, 0.12));
+      }
+
+      .stat-add {
+        color: light-dark(#1a7f37, #3fb950);
+      }
+      .stat-del {
+        color: light-dark(#cf222e, #f85149);
+      }
+
+      .card-actions {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .btn-icon {
+        all: unset;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 4px;
+        color: light-dark(#888, #666);
+        transition: all 100ms;
+      }
+
+      .btn-icon:hover {
+        background: light-dark(#e8e8e8, #2a2a2a);
+        color: light-dark(#333, #ccc);
+      }
+
+      .btn-icon[data-active] {
+        color: light-dark(#1a7f37, #3fb950);
+      }
+
+      .card[data-collapsed] .card-body {
+        display: none;
+      }
+
+      .card-body {
+        padding: 0;
+      }
+
+      /* ── Review drawer ── */
+      .drawer-toggle {
+        all: unset;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        background: light-dark(#f0f0f0, #1a1a1a);
+        border: 1px solid light-dark(#d8d8d8, #2a2a2a);
+        color: light-dark(#333, #ccc);
+        transition: all 120ms;
+      }
+
+      .drawer-toggle:hover {
+        background: light-dark(#e8e8e8, #222);
+        border-color: light-dark(#ccc, #383838);
+      }
+
+      .drawer-toggle .count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 9px;
+        font-size: 10px;
+        font-weight: 600;
+        background: light-dark(#e0e0e0, #333);
+        color: light-dark(#555, #bbb);
+      }
+
+      .drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(400px, 90vw);
+        background: light-dark(#fff, #111);
+        border-left: 1px solid light-dark(#e0e0e0, #222);
+        z-index: 100;
+        transform: translateX(100%);
+        transition: transform 200ms ease;
+        display: flex;
+        flex-direction: column;
+        box-shadow: -4px 0 24px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.4));
+      }
+
+      .drawer[data-open] {
+        transform: translateX(0);
+      }
+
+      .drawer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-bottom: 1px solid light-dark(#e8e8e8, #222);
+        flex-shrink: 0;
+      }
+
+      .drawer-header h2 {
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .drawer-close {
+        all: unset;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 4px;
+        color: light-dark(#888, #666);
+        transition: all 100ms;
+      }
+
+      .drawer-close:hover {
+        background: light-dark(#f0f0f0, #1a1a1a);
+        color: light-dark(#333, #ccc);
+      }
+
+      .drawer-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .drawer-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.3);
+        z-index: 99;
+        display: none;
+      }
+
+      .drawer-backdrop[data-open] {
+        display: block;
+      }
+
+      /* ── Form elements ── */
+      label {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        color: light-dark(#666, #888);
+        margin-bottom: 4px;
+      }
+
+      .field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid light-dark(#ddd, #2a2a2a);
+        background: light-dark(#fafafa, #0d0d0d);
+        color: inherit;
+        border-radius: 6px;
+        font: inherit;
+        font-size: 13px;
+      }
+
+      select {
+        height: 32px;
+        padding: 0 8px;
+      }
+
+      textarea {
+        min-height: 72px;
+        padding: 8px;
+        resize: vertical;
+      }
+
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: light-dark(#bbb, #444);
+      }
+
+      .btn {
+        all: unset;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 32px;
+        padding: 0 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 120ms;
+        border: 1px solid light-dark(#ddd, #2a2a2a);
+        background: light-dark(#fafafa, #161616);
+        color: light-dark(#333, #ccc);
+      }
+
+      .btn:hover {
+        background: light-dark(#f0f0f0, #1c1c1c);
+        border-color: light-dark(#ccc, #383838);
+      }
+
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+
+      .btn-primary {
+        background: light-dark(#1a1a1a, #e8e8e8);
+        color: light-dark(#fff, #111);
+        border-color: transparent;
+      }
+
+      .btn-primary:hover {
+        background: light-dark(#333, #d0d0d0);
+      }
+
+      .btn-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      #selection {
+        color: light-dark(#888, #666);
+        font-size: 12px;
+        font-family: "SF Mono", Monaco, Consolas, monospace;
+        padding: 6px 8px;
+        background: light-dark(#f5f5f5, #0a0a0a);
+        border-radius: 4px;
+        min-height: 28px;
+      }
+
+      /* ── Findings list ── */
+      .finding {
+        border: 1px solid light-dark(#e0e0e0, #222);
+        border-radius: 6px;
+        padding: 8px;
+        background: light-dark(#fafafa, #161616);
+        font-size: 12px;
+        cursor: pointer;
+        transition: border-color 120ms;
+      }
+
+      .finding:hover {
+        border-color: light-dark(#ccc, #383838);
+      }
+
+      .finding-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 6px;
+        margin-bottom: 4px;
+      }
+
+      .finding-badges {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+
+      .badge {
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        background: light-dark(#f0f0f0, #1a1a1a);
+        color: light-dark(#666, #888);
+        border: 1px solid light-dark(#e0e0e0, #2a2a2a);
+      }
+
+      .badge.high {
+        color: light-dark(#cf222e, #f85149);
+        border-color: light-dark(#ffc8c8, rgba(248, 81, 73, 0.3));
+        background: light-dark(#ffebe9, rgba(248, 81, 73, 0.1));
+      }
+
+      .badge.medium {
+        color: light-dark(#9a6700, #d29922);
+        border-color: light-dark(#ffe090, rgba(210, 153, 34, 0.3));
+        background: light-dark(#fff8c5, rgba(210, 153, 34, 0.1));
+      }
+
+      .badge.low {
+        color: light-dark(#1a7f37, #3fb950);
+        border-color: light-dark(#b0ecc0, rgba(63, 185, 80, 0.3));
+        background: light-dark(#dafbe1, rgba(63, 185, 80, 0.1));
+      }
+
+      .finding-actions {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .btn-remove,
+      .btn-resolve {
+        all: unset;
+        cursor: pointer;
+        font-size: 11px;
+        padding: 1px 8px;
+        border-radius: 4px;
+        transition: all 100ms;
+      }
+
+      .btn-remove {
+        color: light-dark(#999, #666);
+      }
+
+      .btn-remove:hover {
+        color: light-dark(#cf222e, #f85149);
+        background: light-dark(#ffebe9, rgba(248, 81, 73, 0.1));
+      }
+
+      .btn-resolve {
+        color: light-dark(#666, #888);
+        border: 1px solid light-dark(#ddd, #2a2a2a);
+        background: light-dark(#f5f5f5, #0d0d0d);
+      }
+
+      .btn-resolve:hover {
+        color: light-dark(#1a7f37, #3fb950);
+        border-color: light-dark(#b0ecc0, rgba(63, 185, 80, 0.3));
+        background: light-dark(#dafbe1, rgba(63, 185, 80, 0.1));
+      }
+
+      .finding-body {
+        color: light-dark(#555, #999);
+        font-family: "SF Mono", Monaco, Consolas, monospace;
+        font-size: 11px;
+        line-height: 1.4;
+      }
+
+      #status {
+        font-size: 12px;
+        color: light-dark(#888, #666);
+        padding: 4px 0;
+      }
+
+      #status.error {
+        color: light-dark(#cf222e, #f85149);
+      }
+
+      .hint {
+        color: light-dark(#aaa, #555);
+        font-size: 11px;
+        line-height: 1.4;
+      }
+
+      .separator {
+        height: 1px;
+        background: light-dark(#e8e8e8, #222);
+      }
+
+      /* ── Diff annotations (inline in diffs) ── */
+      .diff-annotation {
+        margin: 4px 0;
+        border: 1px solid light-dark(#d8e0e8, #2a3040);
+        border-radius: 6px;
+        background: light-dark(#f0f4f8, #141a24);
+        padding: 6px 8px;
+        cursor: pointer;
+        max-width: min(600px, 95vw);
+      }
+
+      .diff-annotation:hover {
+        border-color: light-dark(#bbc8d4, #3a4a5a);
+      }
+
+      .diff-annotation-head {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 3px;
+      }
+
+      .diff-annotation-body {
+        font-size: 12px;
+        color: light-dark(#444, #bbb);
+        white-space: normal;
+      }
+
+      .diff-error {
+        border: 1px dashed light-dark(#ddd, #333);
+        border-radius: 6px;
+        padding: 12px;
+        color: light-dark(#888, #666);
+        font-size: 12px;
+      }
+
+      /* ── SVG icons (inline) ── */
+      .icon {
+        display: inline-block;
+        vertical-align: middle;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-left">
+        <h1>Diff Review</h1>
+        <span class="scope" id="scope"></span>
+      </div>
+      <div class="header-right">
+        <div class="theme-toggle" id="theme-toggle">
+          <button data-theme="light" aria-pressed="false">Light</button>
+          <button data-theme="auto" aria-pressed="true">Auto</button>
+          <button data-theme="dark" aria-pressed="false">Dark</button>
+        </div>
+        <button class="drawer-toggle" id="drawer-toggle" type="button">
+          Review <span class="count" id="finding-count">0</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">Files</div>
+        <div class="sidebar-list" id="file-list"></div>
+      </nav>
+      <div class="main">
+        <main id="diffs"></main>
+      </div>
+    </div>
+
+    <div class="drawer-backdrop" id="drawer-backdrop"></div>
+    <aside class="drawer" id="drawer">
+      <div class="drawer-header">
+        <h2>Review</h2>
+        <button class="drawer-close" id="drawer-close" type="button">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M4 4l8 8M12 4l-8 8" />
+          </svg>
+        </button>
+      </div>
+      <div class="drawer-body">
+        <div id="selection">Select lines in the diff to start.</div>
+        <div class="hint">Click a line number to start, click another to set range.</div>
+        <div class="field-row">
+          <div>
+            <label for="category">Category</label>
+            <select id="category"></select>
+          </div>
+          <div>
+            <label for="severity">Severity</label>
+            <select id="severity"></select>
+          </div>
+        </div>
+        <div>
+          <label for="comment">Comment</label>
+          <textarea id="comment" placeholder="What should change and why?"></textarea>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="clear" type="button">Clear</button>
+          <button class="btn btn-primary" id="add" type="button">Add Finding</button>
+        </div>
+
+        <div class="separator"></div>
+
+        <div>
+          <label for="notes">Notes for this round</label>
+          <textarea id="notes" placeholder="Optional global notes"></textarea>
+        </div>
+        <button class="btn btn-primary" id="submit" type="button" style="width: 100%">Submit Review</button>
+
+        <div class="separator"></div>
+
+        <div id="findings"></div>
+        <div id="status"></div>
+      </div>
+    </aside>
+
+    <script type="module" src="/assets/app.js"></script>
+  </body>
+</html>

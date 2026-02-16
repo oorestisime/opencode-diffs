@@ -1,0 +1,29 @@
+{
+  "name": "opencode-diffs",
+  "version": "0.0.1",
+  "description": "Diff review plugin for OpenCode — browser-based code review with @pierre/diffs",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/plugin/index.mjs",
+  "exports": {
+    ".": "./dist/plugin/index.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown && cp src/ui/review.html dist/ui/review.html",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.2.5",
+    "@pierre/diffs": "1.1.0-beta.13"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "^1.0.7",
+    "@types/bun": "^1.2.18",
+    "@types/node": "^22.15.21",
+    "tsdown": "^0.20.3",
+    "typescript": "^5.8.3"
+  }
+}
