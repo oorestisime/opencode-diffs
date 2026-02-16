@@ -2,6 +2,8 @@
 
 An [OpenCode](https://opencode.ai) plugin that adds browser-based diff code review powered by [@pierre/diffs](https://diffs.com).
 
+![example](example.png)
+
 ---
 
 ## Install

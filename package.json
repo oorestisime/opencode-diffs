@@ -4,6 +4,19 @@
   "description": "Diff review plugin for OpenCode — browser-based code review with @pierre/diffs",
   "type": "module",
   "license": "MIT",
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "diff",
+    "code-review",
+    "diffs",
+    "pierre-diffs"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oorestisime/opencode-diffs.git"
+  },
+  "homepage": "https://github.com/oorestisime/opencode-diffs",
   "main": "./dist/plugin/index.mjs",
   "exports": {
     ".": "./dist/plugin/index.mjs"
