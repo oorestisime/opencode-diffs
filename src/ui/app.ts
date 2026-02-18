@@ -488,8 +488,8 @@ function createView(file: FileEntry, mount: HTMLElement) {
     overflow: "wrap",
     disableFileHeader: true,
     diffIndicators: "bars",
-    expandUnchanged: true,
-    collapsedContextThreshold: 0,
+    expandUnchanged: false,
+    collapsedContextThreshold: 5,
     hunkSeparators: "simple",
     enableLineSelection: true,
     onLineSelectionEnd: (value) => {

@@ -1,6 +1,6 @@
 {
   "name": "opencode-diffs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Diff review plugin for OpenCode — browser-based code review with @pierre/diffs",
   "type": "module",
   "license": "MIT",
