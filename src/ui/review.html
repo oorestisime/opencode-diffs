@@ -76,6 +76,43 @@
         flex-shrink: 0;
       }
 
+      /* ── Layout toggle ── */
+      .layout-toggle {
+        display: inline-flex;
+        background: light-dark(#f0f0f0, #1a1a1a);
+        border: 1px solid light-dark(#d8d8d8, #2a2a2a);
+        border-radius: 6px;
+        padding: 2px;
+        gap: 2px;
+      }
+
+      .layout-toggle button {
+        all: unset;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        color: light-dark(#666, #888);
+        transition: all 120ms;
+      }
+
+      .layout-toggle button:hover {
+        color: light-dark(#333, #ccc);
+      }
+
+      .layout-toggle button[aria-pressed="true"] {
+        background: light-dark(#ffffff, #2a2a2a);
+        color: light-dark(#111, #eee);
+        box-shadow: 0 1px 2px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.3));
+      }
+
+      .layout-toggle svg {
+        flex-shrink: 0;
+      }
+
       /* ── Theme toggle ── */
       .theme-toggle {
         display: inline-flex;
@@ -729,6 +766,16 @@
         <span class="scope" id="scope"></span>
       </div>
       <div class="header-right">
+        <div class="layout-toggle" id="layout-toggle">
+          <button data-layout="unified" aria-pressed="true" title="Unified diff (stacked)">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="5" rx="1"/><rect x="2" y="9" width="12" height="5" rx="1"/></svg>
+            Unified
+          </button>
+          <button data-layout="split" aria-pressed="false" title="Split diff (side-by-side)">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="6" height="12" rx="1"/><rect x="9" y="2" width="6" height="12" rx="1"/></svg>
+            Split
+          </button>
+        </div>
         <div class="theme-toggle" id="theme-toggle">
           <button data-theme="light" aria-pressed="false">Light</button>
           <button data-theme="auto" aria-pressed="true">Auto</button>

@@ -69,6 +69,7 @@ type View =
     };
 
 type ThemeMode = "light" | "dark" | "auto";
+type DiffLayout = "unified" | "split";
 
 const params = new URLSearchParams(location.search);
 const token = params.get("token") || "";
@@ -93,6 +94,7 @@ const drawerBackdrop = document.querySelector("#drawer-backdrop") as HTMLElement
 const drawerClose = document.querySelector("#drawer-close") as HTMLButtonElement;
 const findingCount = document.querySelector("#finding-count") as HTMLSpanElement;
 const themeToggle = document.querySelector("#theme-toggle") as HTMLDivElement;
+const layoutToggle = document.querySelector("#layout-toggle") as HTMLDivElement;
 
 const CHEVRON_SVG = `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4.47 5.47a.75.75 0 0 1 1.06 0L8 7.94l2.47-2.47a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 0 1 0-1.06z"/></svg>`;
 const FILE_ICON_SVG = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M10.75 0c.199 0 .39.08.53.22l3.5 3.5c.14.14.22.331.22.53v9A2.75 2.75 0 0 1 12.25 16h-8.5A2.75 2.75 0 0 1 1 13.25V2.75A2.75 2.75 0 0 1 3.75 0zm-7 1.5c-.69 0-1.25.56-1.25 1.25v10.5c0 .69.56 1.25 1.25 1.25h8.5c.69 0 1.25-.56 1.25-1.25V5h-1.25A2.25 2.25 0 0 1 10 2.75V1.5z"/></svg>`;
@@ -118,6 +120,7 @@ const state = {
   sidebarItems: new Map<string, HTMLButtonElement>(),
   views: new Map<string, View>(),
   themeMode: "auto" as ThemeMode,
+  diffLayout: "unified" as DiffLayout,
   drawerOpen: false,
 };
 
@@ -158,6 +161,26 @@ themeToggle.addEventListener("click", (event) => {
   const btn = (event.target as HTMLElement).closest("button");
   if (!btn) return;
   setTheme(btn.dataset.theme as ThemeMode);
+});
+
+// ── Layout toggle ──
+function applyLayout() {
+  for (const btn of layoutToggle.querySelectorAll("button")) {
+    btn.setAttribute("aria-pressed", btn.dataset.layout === state.diffLayout ? "true" : "false");
+  }
+}
+
+function setLayout(layout: DiffLayout) {
+  if (state.diffLayout === layout) return;
+  state.diffLayout = layout;
+  applyLayout();
+  renderFiles();
+}
+
+layoutToggle.addEventListener("click", (event) => {
+  const btn = (event.target as HTMLElement).closest("button");
+  if (!btn) return;
+  setLayout(btn.dataset.layout as DiffLayout);
 });
 
 // ── Drawer ──
@@ -484,7 +507,7 @@ function createView(file: FileEntry, mount: HTMLElement) {
   const instance = new FileDiff<Meta>({
     theme: pierreTheme(),
     themeType,
-    diffStyle: "unified",
+    diffStyle: state.diffLayout,
     overflow: "wrap",
     disableFileHeader: true,
     diffIndicators: "bars",
@@ -970,6 +993,7 @@ commentRoot.addEventListener("keydown", (event) => {
 
 async function init() {
   applyTheme();
+  applyLayout();
 
   if (!token || !reviewID) {
     setStatus("Invalid review URL", true);
